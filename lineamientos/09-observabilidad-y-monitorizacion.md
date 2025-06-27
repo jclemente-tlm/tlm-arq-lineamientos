@@ -84,6 +84,28 @@ ELK Stack:
     - Dashboard Creation
 ```
 
+## Métricas de Observabilidad
+
+### Métricas de Sistema
+- **Response Time**: P95 < 500ms, P99 < 1000ms
+- **Throughput**: Transacciones por segundo (TPS)
+- **Error Rate**: < 1% de errores
+- **Availability**: 99.9% uptime
+- **Resource Utilization**: CPU < 80%, Memory < 85%
+
+### Métricas de Performance (User-Centric)
+- **First Contentful Paint (FCP)**: < 1.8s
+- **Largest Contentful Paint (LCP)**: < 2.5s
+- **First Input Delay (FID)**: < 100ms
+- **Cumulative Layout Shift (CLS)**: < 0.1
+- **Time to Interactive (TTI)**: < 3.8s
+
+### Métricas de Negocio
+- **Conversion Rate**: Impacto en conversiones
+- **User Engagement**: Tiempo en página, páginas por sesión
+- **Bounce Rate**: % de usuarios que abandonan
+- **Revenue Impact**: Impacto en ingresos por mejoras de performance
+
 ## Implementación en .NET 8
 
 ### Métricas con Prometheus

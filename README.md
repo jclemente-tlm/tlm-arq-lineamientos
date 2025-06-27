@@ -18,34 +18,40 @@ Este repositorio contiene los lineamientos de arquitectura de la empresa, organi
 | Archivo | Título | Estado |
 |---------|--------|--------|
 | [04-apis-y-contratos.md](lineamientos/04-apis-y-contratos.md) | APIs y Contratos | 🔄 En Progreso |
-| [05-microservicios.md](lineamientos/05-microservicios.md) | Microservicios | 🔄 En Progreso |
+| [05-microservicios.md](lineamientos/05-microservicios.md) | Microservicios y Arquitecturas Serverless | 🔄 En Progreso |
 | [06-arquitectura-orientada-eventos.md](lineamientos/06-arquitectura-orientada-eventos.md) | Arquitectura Orientada a Eventos | 🔄 En Progreso |
 | [07-datos-y-persistencia.md](lineamientos/07-datos-y-persistencia.md) | Datos y Persistencia | 🔄 En Progreso |
 
-### 3. Seguridad y Calidad
+### 3. Calidad y Testing
+| Archivo | Título | Estado |
+|---------|--------|--------|
+| [09-testing-strategy.md](lineamientos/09-testing-strategy.md) | Testing Strategy | 🔄 En Progreso |
+| [10-performance-y-optimizacion.md](lineamientos/10-performance-y-optimizacion.md) | Performance y Optimización | 🔄 En Progreso |
+
+### 4. Observabilidad y Resiliencia
+| Archivo | Título | Estado |
+|---------|--------|--------|
+| [09-observabilidad-y-monitorizacion.md](lineamientos/09-observabilidad-y-monitorizacion.md) | Observabilidad y Monitorización | 🔄 En Progreso |
+| [14-patrones-resiliencia.md](lineamientos/14-patrones-resiliencia.md) | Patrones de Resiliencia y Disaster Recovery | 🔄 En Progreso |
+
+### 5. Seguridad
 | Archivo | Título | Estado |
 |---------|--------|--------|
 | [08-seguridad.md](lineamientos/08-seguridad.md) | Seguridad | 🔄 En Progreso |
-| [09-testing-strategy.md](lineamientos/09-testing-strategy.md) | Testing Strategy | 🔄 En Progreso |
-| [09-observabilidad-y-monitorizacion.md](lineamientos/09-observabilidad-y-monitorizacion.md) | Observabilidad y Monitorización | 🔄 En Progreso |
-| [10-performance-y-optimizacion.md](lineamientos/10-performance-y-optimizacion.md) | Performance y Optimización | 🔄 En Progreso |
 
-### 4. Operaciones y DevOps
+### 6. Operaciones y DevOps
 | Archivo | Título | Estado |
 |---------|--------|--------|
 | [10-devops-y-entornos.md](lineamientos/10-devops-y-entornos.md) | DevOps y Entornos | 🔄 En Progreso |
 | [13-gestion-configuracion.md](lineamientos/13-gestion-configuracion.md) | Gestión de Configuración | 🔄 En Progreso |
-| [14-patrones-resiliencia.md](lineamientos/14-patrones-resiliencia.md) | Patrones de Resiliencia | 🔄 En Progreso |
+| [16-integracion-y-etl.md](lineamientos/16-integracion-y-etl.md) | Integración y ETL | 🔄 En Progreso |
 
-### 5. Frontend y UX
+### 7. Frontend y UX
 | Archivo | Título | Estado |
 |---------|--------|--------|
 | [15-arquitectura-frontend.md](lineamientos/15-arquitectura-frontend.md) | Arquitectura Frontend | 🔄 En Progreso |
-| [16-integracion-y-etl.md](lineamientos/16-integracion-y-etl.md) | Integración y ETL | 🔄 En Progreso |
 
-### 6. Cloud y Modernización
+### 8. Modernización
 | Archivo | Título | Estado |
 |---------|--------|--------|
-| [17-arquitectura-serverless.md](lineamientos/17-arquitectura-serverless.md) | Arquitectura Serverless | 🔄 En Progreso |
 | [18-modernizacion-y-stack-heredado.md](lineamientos/18-modernizacion-y-stack-heredado.md) | Modernización y Stack Heredado | 🔄 En Progreso |
-| [19-disaster-recovery.md](lineamientos/19-disaster-recovery.md) | Disaster Recovery | 🔄 En Progreso |

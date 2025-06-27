@@ -1,8 +1,8 @@
-# Patrones de Resiliencia
+# Patrones de Resiliencia y Disaster Recovery
 
 ## Propósito
 
-Este lineamiento define los patrones y estrategias de resiliencia para construir sistemas robustos que puedan manejar fallos, latencia y carga de manera efectiva. El objetivo es garantizar la disponibilidad y confiabilidad de los servicios incluso en condiciones adversas.
+Este lineamiento define los patrones y estrategias de resiliencia para construir sistemas robustos que puedan manejar fallos, latencia y carga de manera efectiva, así como los procedimientos de Disaster Recovery (DR) para garantizar la continuidad del negocio ante fallos catastróficos. El objetivo es garantizar la disponibilidad y confiabilidad de los servicios incluso en condiciones adversas.
 
 ## Principios Fundamentales
 
@@ -23,6 +23,12 @@ Este lineamiento define los patrones y estrategias de resiliencia para construir
 - **Data replication**: Copias de datos críticos
 - **Geographic distribution**: Distribución geográfica
 - **Diverse providers**: Múltiples proveedores de servicios
+
+### RTO y RPO
+- **RTO (Recovery Time Objective)**: Tiempo máximo aceptable para restaurar servicios
+- **RPO (Recovery Point Objective)**: Pérdida máxima de datos aceptable
+- **Definición por servicio**: Cada servicio debe tener sus propios objetivos
+- **Validación regular**: Probar objetivos mediante simulacros
 
 ## Patrones de Resiliencia
 
@@ -204,87 +210,62 @@ public class ExternalServiceClient
 ```
 
 #### Configuración de Timeouts
-- **Connection Timeout**: Tiempo para establecer conexión
-- **Read Timeout**: Tiempo para leer respuesta
-- **Write Timeout**: Tiempo para escribir datos
-- **Global Timeout**: Timeout general de la operación
+```json
+// Ejemplo: Configuración de timeouts
+{
+  "Timeouts": {
+    "Database": "00:00:30",
+    "ExternalApi": "00:00:10",
+    "Cache": "00:00:05",
+    "FileSystem": "00:00:15"
+  }
+}
+```
 
 ### 4. Bulkhead Pattern
 
 #### Propósito
-Aislar recursos y fallos entre diferentes partes del sistema.
+Aislar fallos entre diferentes partes del sistema.
 
 #### Implementación
 ```csharp
-// Ejemplo: Bulkhead con thread pools separados
-public class BulkheadConfig
+// Ejemplo: Bulkhead con semáforos
+public class BulkheadService
 {
-    public static IServiceCollection AddBulkheadServices(IServiceCollection services)
+    private readonly SemaphoreSlim _databaseSemaphore;
+    private readonly SemaphoreSlim _externalApiSemaphore;
+    private readonly SemaphoreSlim _fileSystemSemaphore;
+
+    public BulkheadService()
     {
-        services.AddSingleton<IUserServiceExecutor>(provider =>
-            new UserServiceExecutor(10));
-
-        services.AddSingleton<IPaymentServiceExecutor>(provider =>
-            new PaymentServiceExecutor(5));
-
-        return services;
-    }
-}
-
-public class UserService
-{
-    private readonly IUserRepository _userRepository;
-    private readonly IUserServiceExecutor _executor;
-
-    public UserService(IUserRepository userRepository, IUserServiceExecutor executor)
-    {
-        _userRepository = userRepository;
-        _executor = executor;
+        _databaseSemaphore = new SemaphoreSlim(10, 10); // Máximo 10 conexiones
+        _externalApiSemaphore = new SemaphoreSlim(5, 5); // Máximo 5 requests
+        _fileSystemSemaphore = new SemaphoreSlim(3, 3); // Máximo 3 operaciones
     }
 
-    public async Task<User> GetUserAsync(string id)
+    public async Task<Result> ProcessWithBulkheadAsync(ProcessRequest request)
     {
-        return await _executor.ExecuteAsync(async () =>
+        // Usar bulkhead específico según el tipo de operación
+        var semaphore = request.Type switch
         {
-            return await _userRepository.GetByIdAsync(id);
-        });
-    }
-}
+            "database" => _databaseSemaphore,
+            "api" => _externalApiSemaphore,
+            "file" => _fileSystemSemaphore,
+            _ => throw new ArgumentException("Invalid operation type")
+        };
 
-public interface IUserServiceExecutor
-{
-    Task<T> ExecuteAsync<T>(Func<Task<T>> operation);
-}
-
-public class UserServiceExecutor : IUserServiceExecutor
-{
-    private readonly SemaphoreSlim _semaphore;
-
-    public UserServiceExecutor(int maxConcurrency)
-    {
-        _semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
-    }
-
-    public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
-    {
-        await _semaphore.WaitAsync();
+        await semaphore.WaitAsync();
         try
         {
-            return await operation();
+            return await ProcessRequestAsync(request);
         }
         finally
         {
-            _semaphore.Release();
+            semaphore.Release();
         }
     }
 }
 ```
-
-#### Tipos de Bulkhead
-- **Thread Pool Isolation**: Pools de threads separados
-- **Process Isolation**: Procesos separados
-- **Service Isolation**: Servicios independientes
-- **Database Connection Pool**: Pools de conexión separados
 
 ### 5. Fallback Pattern
 
@@ -293,308 +274,375 @@ Proporcionar alternativas cuando el servicio principal falla.
 
 #### Implementación
 ```csharp
-// Ejemplo: Fallback con múltiples niveles
+// Ejemplo: Fallback con múltiples estrategias
 public class RecommendationService
 {
-    private readonly IRecommendationEngine _recommendationEngine;
+    private readonly IRecommendationEngine _primaryEngine;
+    private readonly IRecommendationEngine _secondaryEngine;
     private readonly ICacheService _cacheService;
-    private readonly IRecommendationRepository _recommendationRepository;
-    private readonly IAsyncPolicy<List<Recommendation>> _fallbackPolicy;
-
-    public RecommendationService(
-        IRecommendationEngine recommendationEngine,
-        ICacheService cacheService,
-        IRecommendationRepository recommendationRepository)
-    {
-        _recommendationEngine = recommendationEngine;
-        _cacheService = cacheService;
-        _recommendationRepository = recommendationRepository;
-
-        _fallbackPolicy = Policy<List<Recommendation>>
-            .Handle<Exception>()
-            .FallbackAsync(async (context) =>
-            {
-                // Fallback 1: Cache local
-                var cached = await _cacheService.GetRecommendationsAsync(context.UserId);
-                if (cached.Any())
-                {
-                    return cached;
-                }
-
-                // Fallback 2: Recomendaciones populares
-                return await GetPopularRecommendationsAsync();
-            });
-    }
 
     public async Task<List<Recommendation>> GetRecommendationsAsync(string userId)
     {
-        return await _fallbackPolicy.ExecuteAsync(async () =>
-        {
-            return await _recommendationEngine.GetRecommendationsAsync(userId);
-        });
-    }
-
-    private async Task<List<Recommendation>> GetPopularRecommendationsAsync()
-    {
-        return await _recommendationRepository.GetPopularRecommendationsAsync();
-    }
-}
-```
-
-#### Estrategias de Fallback
-- **Cache**: Usar datos cacheados
-- **Default Values**: Valores por defecto
-- **Alternative Service**: Servicio alternativo
-- **Degraded Mode**: Modo degradado con funcionalidad limitada
-
-### 6. Rate Limiting Pattern
-
-#### Propósito
-Limitar el número de requests para proteger servicios.
-
-#### Implementación
-```csharp
-// Ejemplo: Rate Limiting con Bucket4j
-@Service
-public class RateLimitedService {
-
-    private readonly Bucket bucket = Bucket.builder()
-        .addLimit(Bandwidth.classic(100, Refill.intervally(100, Duration.ofMinutes(1))))
-        .build();
-
-    public Response processRequest(Request request) {
-        if (bucket.tryConsume(1)) {
-            return processRequestInternal(request);
-        } else {
-            throw new RateLimitExceededException("Rate limit exceeded");
-        }
-    }
-}
-```
-
-#### Tipos de Rate Limiting
-- **Fixed Window**: Ventana fija de tiempo
-- **Sliding Window**: Ventana deslizante
-- **Token Bucket**: Bucket de tokens
-- **Leaky Bucket**: Bucket con fuga
-
-### 7. Health Check Pattern
-
-#### Propósito
-Monitorear la salud de los servicios y detectar problemas.
-
-#### Implementación
-```csharp
-// Ejemplo: Health Check con .NET Health Checks
-public class DatabaseHealthCheck : IHealthCheck
-{
-    private readonly IDbConnection _dbConnection;
-
-    public DatabaseHealthCheck(IDbConnection dbConnection)
-    {
-        _dbConnection = dbConnection;
-    }
-
-    public async Task<HealthCheckResult> CheckHealthAsync(
-        HealthCheckContext context,
-        CancellationToken cancellationToken = default)
-    {
         try
         {
-            using var connection = _dbConnection;
-            await connection.OpenAsync(cancellationToken);
-
-            return HealthCheckResult.Healthy(
-                description: "Database is available",
-                data: new Dictionary<string, object>
-                {
-                    ["database"] = "Available",
-                    ["connection"] = "OK"
-                });
+            // Intentar con el motor principal
+            return await _primaryEngine.GetRecommendationsAsync(userId);
         }
         catch (Exception ex)
         {
-            return HealthCheckResult.Unhealthy(
-                description: "Database is unavailable",
-                exception: ex,
-                data: new Dictionary<string, object>
+            // Fallback 1: Motor secundario
+            try
+            {
+                return await _secondaryEngine.GetRecommendationsAsync(userId);
+            }
+            catch
+            {
+                // Fallback 2: Cache
+                var cachedRecommendations = await _cacheService.GetAsync<List<Recommendation>>($"rec_{userId}");
+                if (cachedRecommendations != null)
                 {
-                    ["database"] = "Error",
-                    ["error"] = ex.Message
-                });
+                    return cachedRecommendations;
+                }
+
+                // Fallback 3: Recomendaciones por defecto
+                return GetDefaultRecommendations();
+            }
         }
     }
-}
-```
 
-## Configuración y Monitoreo
-
-### Configuración Centralizada
-```json
-# Ejemplo: Configuración de resiliencia
-{
-  "Polly": {
-    "CircuitBreaker": {
-      "UserService": {
-        "ExceptionsAllowedBeforeBreaking": 5,
-        "DurationOfBreak": "00:00:30",
-        "HandledEventsAllowedBeforeBreaking": 10
-      }
-    },
-    "Retry": {
-      "PaymentService": {
-        "MaxAttempts": 3,
-        "WaitDuration": "00:00:01",
-        "EnableExponentialBackoff": true,
-        "ExponentialBackoffMultiplier": 2
-      }
-    },
-    "Timeout": {
-      "ExternalService": {
-        "TimeoutDuration": "00:00:05"
-      }
-    },
-    "Bulkhead": {
-      "UserService": {
-        "MaxConcurrentCalls": 10,
-        "MaxWaitDuration": "00:00:01"
-      }
+    private List<Recommendation> GetDefaultRecommendations()
+    {
+        return new List<Recommendation>
+        {
+            new Recommendation { Id = "default_1", Title = "Producto Popular" },
+            new Recommendation { Id = "default_2", Title = "Oferta Especial" }
+        };
     }
-  }
 }
 ```
 
-### Métricas de Resiliencia
+## Estrategias de Disaster Recovery
+
+### 1. Backup Strategy
+
+#### Tipos de Backup
+```yaml
+# Ejemplo: Estrategia de backup con AWS
+backup_strategy:
+  database:
+    type: "automated"
+    frequency: "daily"
+    retention: "30 days"
+    cross_region: true
+    encryption: "AES-256"
+
+  application_data:
+    type: "incremental"
+    frequency: "hourly"
+    retention: "7 days"
+    storage_class: "S3-IA"
+
+  configuration:
+    type: "versioned"
+    frequency: "on_change"
+    retention: "1 year"
+    source_control: true
+```
+
+#### Estrategias de Backup
+- **Full Backup**: Backup completo de todos los datos
+- **Incremental Backup**: Solo cambios desde el último backup
+- **Differential Backup**: Cambios desde el último backup completo
+- **Continuous Backup**: Backup en tiempo real (CDC)
+
+#### Validación de Backups
+```bash
+# Ejemplo: Script de validación de backup
+#!/bin/bash
+# Validar backup de PostgreSQL
+pg_restore --list backup_file.dump | grep -q "table_name"
+if [ $? -eq 0 ]; then
+    echo "Backup validation successful"
+else
+    echo "Backup validation failed"
+    exit 1
+fi
+```
+
+### 2. Data Replication
+
+#### Replicación Síncrona vs Asíncrona
+```sql
+-- Ejemplo: Configuración de replicación PostgreSQL
+-- Replicación síncrona para datos críticos
+ALTER SYSTEM SET synchronous_commit = on;
+ALTER SYSTEM SET synchronous_standby_names = 'standby1,standby2';
+
+-- Replicación asíncrona para datos no críticos
+ALTER SYSTEM SET synchronous_commit = off;
+```
+
+#### Estrategias de Replicación
+- **Synchronous**: Confirmación solo después de replicación
+- **Asynchronous**: Confirmación inmediata, replicación posterior
+- **Semi-synchronous**: Confirmación después de replicación a al menos un nodo
+- **Near-synchronous**: Replicación con latencia mínima
+
+### 3. Multi-Region Strategy
+
+#### Arquitectura Multi-Región
+```yaml
+# Ejemplo: Configuración multi-región con AWS
+regions:
+  primary:
+    name: "us-east-1"
+    services:
+      - "api-gateway"
+      - "lambda"
+      - "rds"
+      - "dynamodb"
+
+  secondary:
+    name: "us-west-2"
+    services:
+      - "api-gateway"
+      - "lambda"
+      - "rds-read-replica"
+      - "dynamodb-global-table"
+
+  routing:
+    strategy: "active-active"
+    health_check: "/health"
+    failover_time: "30s"
+```
+
+#### Patrones de Multi-Región
+- **Active-Active**: Servicios activos en todas las regiones
+- **Active-Passive**: Servicios activos en una región, pasivos en otras
+- **Read Replicas**: Lecturas distribuidas, escrituras centralizadas
+- **Global Tables**: Tablas replicadas globalmente (DynamoDB)
+
+### 4. Database Recovery
+
+#### Estrategias de Recuperación de Base de Datos
+```sql
+-- Ejemplo: Procedimiento de recuperación PostgreSQL
+-- 1. Verificar estado del backup
+SELECT pg_is_in_recovery();
+
+-- 2. Restaurar desde backup
+pg_restore --clean --if-exists --verbose backup_file.dump
+
+-- 3. Verificar integridad
+SELECT COUNT(*) FROM critical_table;
+```
+
+#### Tipos de Recuperación
+- **Point-in-Time Recovery**: Recuperar a un momento específico
+- **Full Recovery**: Recuperación completa desde backup
+- **Incremental Recovery**: Recuperación incremental
+- **Logical Recovery**: Recuperación de datos específicos
+
+### 5. Application Recovery
+
+#### Estrategias de Recuperación de Aplicaciones
 ```csharp
-// Ejemplo: Métricas con Micrometer
-using Microsoft.Extensions.EventBus.RabbitMQ;
-using Microsoft.Extensions.Metrics;
-
-public class ResilienceMetrics
+// Ejemplo: Health check con .NET 8
+[ApiController]
+[Route("api/[controller]")]
+public class HealthController : ControllerBase
 {
-    private readonly IEventBus _eventBus;
-    private readonly IMetrics _metrics;
-
-    public ResilienceMetrics(IEventBus eventBus, IMetrics metrics)
+    [HttpGet]
+    public async Task<IActionResult> Get()
     {
-        _eventBus = eventBus;
-        _metrics = metrics;
-    }
+        var health = new
+        {
+            Status = "Healthy",
+            Timestamp = DateTime.UtcNow,
+            Services = new
+            {
+                Database = await CheckDatabaseHealth(),
+                Cache = await CheckCacheHealth(),
+                ExternalApi = await CheckExternalApiHealth()
+            }
+        };
 
-    [EventListener]
-    public void OnCircuitBreakerStateChanged(CircuitBreakerOnStateTransitionEvent @event)
-    {
-        _metrics.Counter("circuit_breaker_state_changes",
-            "name", @event.CircuitBreakerName,
-            "state", @event.StateTransition.ToState.Name)
-            .Increment();
+        return Ok(health);
     }
 }
 ```
 
-### Alertas Recomendadas
-- **Circuit Breaker Open**: Circuit breaker abierto por más de 5 minutos
-- **High Retry Rate**: Tasa de reintentos > 20%
-- **Timeout Exceeded**: Timeouts > 10% de requests
-- **Bulkhead Full**: Bulkhead al 90% de capacidad
+#### Componentes de Recuperación
+- **Health Checks**: Verificación de salud de servicios
+- **Circuit Breakers**: Prevención de cascada de fallos
+- **Graceful Degradation**: Degradación controlada de funcionalidades
+- **Auto-scaling**: Escalado automático según demanda
 
-## Testing de Resiliencia
+## Plan de Disaster Recovery
 
-### Chaos Engineering
+### 1. Análisis de Impacto
+
+#### Business Impact Analysis (BIA)
+```yaml
+# Ejemplo: Análisis de impacto por servicio
+services:
+  user_service:
+    criticality: "High"
+    rto: "4 hours"
+    rpo: "15 minutes"
+    business_impact: "User registration and authentication"
+
+  payment_service:
+    criticality: "Critical"
+    rto: "1 hour"
+    rpo: "5 minutes"
+    business_impact: "Financial transactions"
+
+  notification_service:
+    criticality: "Medium"
+    rto: "8 hours"
+    rpo: "1 hour"
+    business_impact: "User communications"
+```
+
+### 2. Procedimientos de Recuperación
+
+#### Runbook de Recuperación
+```bash
+#!/bin/bash
+# Runbook de recuperación de base de datos
+
+echo "Starting database recovery process..."
+
+# 1. Verificar conectividad
+if ! pg_isready -h $DB_HOST -p $DB_PORT; then
+    echo "Database is not accessible"
+    exit 1
+fi
+
+# 2. Detener aplicaciones
+echo "Stopping applications..."
+docker-compose down
+
+# 3. Restaurar backup
+echo "Restoring from backup..."
+pg_restore --clean --if-exists --verbose $BACKUP_FILE
+
+# 4. Verificar integridad
+echo "Verifying data integrity..."
+psql -h $DB_HOST -p $DB_PORT -d $DB_NAME -c "SELECT COUNT(*) FROM users;"
+
+# 5. Reiniciar aplicaciones
+echo "Restarting applications..."
+docker-compose up -d
+
+echo "Recovery process completed"
+```
+
+### 3. Testing de Disaster Recovery
+
+#### Tipos de Testing
+- **Tabletop Exercises**: Simulacros de escritorio
+- **Partial Failover**: Pruebas de failover parcial
+- **Full Failover**: Pruebas de failover completo
+- **Data Recovery**: Pruebas de recuperación de datos
+
+#### Métricas de Testing
+```yaml
+# Ejemplo: Métricas con Prometheus
+metrics:
+  recovery_time:
+    description: "Time to recover from disaster"
+    unit: "seconds"
+    target: "< 3600"  # 1 hour
+
+  data_loss:
+    description: "Amount of data lost during recovery"
+    unit: "records"
+    target: "0"
+
+  service_availability:
+    description: "Service availability during recovery"
+    unit: "percentage"
+    target: "> 99.9"
+```
+
+### Métricas de Disaster Recovery
+
+#### Métricas Clave
+- **RTO Achievement**: % de veces que se cumple el RTO
+- **RPO Achievement**: % de veces que se cumple el RPO
+- **Recovery Success Rate**: % de recuperaciones exitosas
+- **Testing Frequency**: Frecuencia de pruebas de DR
+
+#### Implementación de Métricas
 ```csharp
-// Ejemplo: Test de resiliencia
-using Xunit;
-using FluentAssertions;
-
-public class ResilienceTest
+// Ejemplo: Métricas con Prometheus
+public class DisasterRecoveryMetrics
 {
-    [Fact]
-    public void ShouldHandleServiceFailure()
-    {
-        // Simular fallo del servicio
-        var response = Given()
-            .When()
-            .Get("/api/users/123")
-            .Then()
-            .StatusCode(200)
-            .Body("status", "UNAVAILABLE");
+    private readonly Counter _recoveryAttempts;
+    private readonly Counter _recoverySuccesses;
+    private readonly Histogram _recoveryTime;
+    private readonly Gauge _dataLoss;
 
-        response.Should().NotBeNull();
-        response.StatusCode.Should().Be(200);
-        response.Body.Should().Contain("status", "UNAVAILABLE");
+    public DisasterRecoveryMetrics()
+    {
+        _recoveryAttempts = Metrics.CreateCounter("dr_attempts_total", "Total DR attempts");
+        _recoverySuccesses = Metrics.CreateCounter("dr_successes_total", "Total successful DR");
+        _recoveryTime = Metrics.CreateHistogram("dr_recovery_time_seconds", "DR recovery time");
+        _dataLoss = Metrics.CreateGauge("dr_data_loss_records", "Data loss during recovery");
     }
 
-    [Fact]
-    public void ShouldRetryOnTemporaryFailure()
+    public void RecordRecoveryAttempt()
     {
-        // Simular fallo temporal
-        var response = Given()
-            .When()
-            .Post("/api/payments")
-            .Then()
-            .StatusCode(200);
+        _recoveryAttempts.Inc();
+    }
 
-        response.Should().NotBeNull();
-        response.StatusCode.Should().Be(200);
+    public void RecordRecoverySuccess(TimeSpan recoveryTime, int dataLoss)
+    {
+        _recoverySuccesses.Inc();
+        _recoveryTime.Observe(recoveryTime.TotalSeconds);
+        _dataLoss.Set(dataLoss);
     }
 }
 ```
-
-### Estrategias de Testing
-- **Unit Testing**: Probar patrones individualmente
-- **Integration Testing**: Probar interacciones entre servicios
-- **Chaos Testing**: Simular fallos en producción
-- **Load Testing**: Probar bajo carga
 
 ## Checklist de Cumplimiento
 
-### Para Nuevos Proyectos
-- [ ] Patrones de resiliencia identificados y documentados
-- [ ] Circuit breakers implementados para servicios críticos
-- [ ] Estrategia de retry definida y configurada
-- [ ] Timeouts configurados para todas las operaciones externas
-- [ ] Fallbacks implementados para funcionalidades críticas
-- [ ] Health checks configurados y monitoreados
-- [ ] Testing de resiliencia implementado
+### Para Patrones de Resiliencia
+- [ ] Circuit breakers implementados en servicios críticos
+- [ ] Estrategias de retry configuradas apropiadamente
+- [ ] Timeouts definidos para todas las operaciones externas
+- [ ] Bulkheads implementados para aislar fallos
+- [ ] Fallbacks definidos para servicios críticos
 
-### Para Cambios Existentes
-- [ ] Impacto en resiliencia evaluado
-- [ ] Patrones de resiliencia actualizados si es necesario
-- [ ] Configuración de resiliencia revisada
-- [ ] Testing de resiliencia ejecutado
-- [ ] Monitoreo de resiliencia actualizado
+### Para Disaster Recovery
+- [ ] Estrategia de backup definida e implementada
+- [ ] Replicación de datos configurada
+- [ ] Arquitectura multi-región implementada
+- [ ] Procedimientos de recuperación documentados
+- [ ] Testing de DR programado regularmente
 
-## Excepciones y Justificaciones
-
-### Cuándo No Aplicar Patrones de Resiliencia
-- **Operaciones idempotentes**: Operaciones que pueden repetirse sin efectos
-- **Operaciones críticas**: Operaciones que no pueden fallar
-- **Operaciones síncronas**: Operaciones que requieren respuesta inmediata
-- **Operaciones de bajo volumen**: Operaciones con tráfico mínimo
-
-### Proceso de Excepción
-1. **Análisis de riesgo**: Evaluar impacto de no aplicar patrones
-2. **Alternativas**: Identificar otras formas de manejar fallos
-3. **Monitoreo**: Implementar monitoreo adicional
-4. **Documentación**: Documentar justificación y alternativas
-5. **Revisión**: Revisar decisión periódicamente
+### Para Ambos
+- [ ] Métricas de resiliencia y DR implementadas
+- [ ] Alertas configuradas para eventos críticos
+- [ ] Documentación actualizada
+- [ ] Equipo entrenado en procedimientos
 
 ## Referencias y Recursos
 
-### Librerías de Resiliencia
-- [Resilience4j - Circuit breaker para Java]
-- [Hystrix - Circuit breaker (deprecated)]
-- [Polly - Resilience patterns para .NET]
-- [Circuit Breaker - Patrón de diseño]
+### Herramientas de Resiliencia
+- [Polly - Biblioteca de resiliencia para .NET]
+- [Resilience4j - Biblioteca de resiliencia para Java]
+- [Hystrix - Circuit breaker pattern]
+- [Sentinel - Control de flujo y resiliencia]
 
-### Herramientas de Testing
-- [Chaos Monkey - Chaos engineering]
-- [Gremlin - Chaos engineering platform]
-- [Litmus - Chaos engineering para Kubernetes]
-- [Chaos Toolkit - Framework de chaos engineering]
+### Herramientas de Disaster Recovery
+- [AWS Backup - Servicio de backup automatizado]
+- [Azure Site Recovery - Recuperación de desastres]
+- [Veeam - Backup y recuperación]
+- [Commvault - Gestión de datos empresarial]
 
-### Recursos Adicionales
-- [Polly - .NET Resilience and Transient-Fault-Handling Library]
-- [Circuit Breaker Pattern - Martin Fowler]
-- [Retry Pattern - Microsoft Docs]
-- [Bulkhead Pattern - Microsoft Docs]
+### Documentos Relacionados
+- [Observabilidad y Monitorización](09-observabilidad-y-monitorizacion.md) - Monitoreo de resiliencia
+- [Performance y Optimización](10-performance-y-optimizacion.md) - Optimización de rendimiento

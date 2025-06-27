@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Este lineamiento establece los principios, métricas y mejores prácticas para garantizar que los sistemas cumplan con los requisitos de rendimiento, escalabilidad y eficiencia. El objetivo es proporcionar una experiencia de usuario óptima mientras se optimiza el uso de recursos.
+Este lineamiento establece los principios y mejores prácticas para optimizar el rendimiento de los sistemas. Se enfoca en técnicas de optimización específicas, mientras que las métricas y monitoreo se cubren en el documento de [Observabilidad y Monitorización](09-observabilidad-y-monitorizacion.md).
 
 ## Principios Fundamentales
 
@@ -24,27 +24,7 @@ Este lineamiento establece los principios, métricas y mejores prácticas para g
 - **Connection pooling**: Mantener pool de conexiones a bases de datos
 - **Memory management**: Optimizar uso de memoria y evitar leaks
 
-## Métricas de Performance
-
-### Métricas de Usuario (User-Centric)
-- **First Contentful Paint (FCP)**: < 1.8s
-- **Largest Contentful Paint (LCP)**: < 2.5s
-- **First Input Delay (FID)**: < 100ms
-- **Cumulative Layout Shift (CLS)**: < 0.1
-- **Time to Interactive (TTI)**: < 3.8s
-
-### Métricas de Sistema
-- **Response Time**: P95 < 500ms, P99 < 1000ms
-- **Throughput**: Transacciones por segundo (TPS)
-- **Error Rate**: < 1% de errores
-- **Availability**: 99.9% uptime
-- **Resource Utilization**: CPU < 80%, Memory < 85%
-
-### Métricas de Negocio
-- **Conversion Rate**: Impacto en conversiones
-- **User Engagement**: Tiempo en página, páginas por sesión
-- **Bounce Rate**: % de usuarios que abandonan
-- **Revenue Impact**: Impacto en ingresos por mejoras de performance
+> **📊 Métricas y Monitoreo**: Para métricas de performance, alertas y dashboards, consulta [Observabilidad y Monitorización](09-observabilidad-y-monitorizacion.md).
 
 ## Patrones de Optimización
 
@@ -218,39 +198,6 @@ spec:
 - **Rate Limiting**: Limitar requests por cliente
 - **Load Balancing**: Distribuir carga entre instancias
 
-## Monitoreo y Alerting
-
-### Métricas a Monitorear
-```json
-// Ejemplo: Configuración de Prometheus
-{
-  "scrape_configs": [
-    {
-      "job_name": "user-service",
-      "metrics_path": "/metrics",
-      "scrape_interval": "15s",
-      "static_configs": [
-        {
-          "targets": ["user-service:8080"]
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Dashboards Recomendados
-- **Application Performance**: Response time, error rate, throughput
-- **Infrastructure**: CPU, memory, disk, network
-- **Business Metrics**: User engagement, conversion rates
-- **Error Tracking**: Error frequency, error types
-
-### Alertas Críticas
-- **Response Time**: P95 > 500ms por 5 minutos
-- **Error Rate**: > 5% por 2 minutos
-- **Availability**: < 99% por 10 minutos
-- **Resource Usage**: CPU > 90% por 5 minutos
-
 ## Performance Testing
 
 ### Tipos de Pruebas
@@ -299,19 +246,15 @@ public class PerformanceTest
 
 ### Para Nuevos Proyectos
 - [ ] Requisitos de performance definidos y documentados
-- [ ] Métricas de performance establecidas y monitoreadas
 - [ ] Estrategia de cache definida e implementada
 - [ ] Optimización de base de datos completada
 - [ ] Testing de performance automatizado
-- [ ] Alertas de performance configuradas
 - [ ] Documentación de optimizaciones implementadas
 
 ### Para Cambios Existentes
 - [ ] Impacto en performance evaluado
-- [ ] Métricas de baseline establecidas
 - [ ] Testing de performance ejecutado
 - [ ] Optimizaciones implementadas si es necesario
-- [ ] Monitoreo de performance actualizado
 
 ## Excepciones y Justificaciones
 
@@ -330,12 +273,6 @@ public class PerformanceTest
 
 ## Referencias y Recursos
 
-### Herramientas de Monitoreo
-- [Prometheus - Métricas y alerting]
-- [Grafana - Visualización de métricas]
-- [New Relic - APM y monitoreo]
-- [Datadog - Monitoreo completo]
-
 ### Herramientas de Testing
 - [JMeter - Testing de carga]
 - [Gatling - Testing de APIs]
@@ -343,13 +280,11 @@ public class PerformanceTest
 - [Artillery - Testing de APIs]
 
 ### Frameworks de Optimización
-- [Spring Boot Actuator - Métricas de aplicación]
-- [Micrometer - Métricas de aplicación]
-- [Hystrix - Circuit breaker]
-- [Resilience4j - Patrones de resiliencia]
-
-### Recursos Adicionales
 - [ASP.NET Core Performance Best Practices]
 - [Entity Framework Performance Tips]
 - [.NET Performance Guidelines]
 - [Performance Testing Best Practices]
+
+### Documentos Relacionados
+- [Observabilidad y Monitorización](09-observabilidad-y-monitorizacion.md) - Métricas y monitoreo
+- [Patrones de Resiliencia](14-patrones-resiliencia.md) - Circuit breakers y patrones de recuperación
