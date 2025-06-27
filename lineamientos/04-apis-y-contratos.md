@@ -4,6 +4,8 @@
 
 Las APIs son la columna vertebral de la arquitectura moderna, facilitando la comunicación entre servicios, aplicaciones frontend y sistemas externos. Este lineamiento define las pautas para diseñar, desarrollar e implementar APIs RESTful robustas, escalables y seguras, alineadas con nuestro stack tecnológico (.NET 8, AWS, microservicios).
 
+> **Ver también**: [05 - Microservicios](05-microservicios.md) para comunicación entre servicios, [08 - Seguridad](08-seguridad.md) para autenticación y autorización
+
 ## Principios Fundamentales
 
 ### 1. Diseño First
@@ -23,6 +25,8 @@ Las APIs son la columna vertebral de la arquitectura moderna, facilitando la com
 - **Caching Strategy**: Caching en múltiples niveles
 - **Rate Limiting**: Control de velocidad de requests
 - **Pagination**: Paginación eficiente
+
+> **Ver también**: [10 - Performance y Optimización](10-performance-y-optimizacion.md) para estrategias de rendimiento
 
 ## Stack Tecnológico de APIs
 

@@ -4,6 +4,8 @@
 
 Este lineamiento define los principios, patrones y mejores prácticas para el diseño, desarrollo e implementación de microservicios. Se enfoca en crear servicios autónomos, escalables y mantenibles que aporten valor real al negocio.
 
+> **Ver también**: [04 - APIs y Contratos](04-apis-y-contratos.md) para comunicación entre servicios, [06 - Arquitectura Orientada a Eventos](06-arquitectura-orientada-eventos.md) para comunicación asíncrona
+
 ## Principios Fundamentales
 
 ### Autonomía de Servicios
@@ -20,12 +22,16 @@ Este lineamiento define los principios, patrones y mejores prácticas para el di
 - **CQRS**: Separación de comandos y consultas
 - **Saga pattern**: Transacciones distribuidas
 
+> **Ver también**: [06 - Arquitectura Orientada a Eventos](06-arquitectura-orientada-eventos.md) para patrones de eventos
+
 ### Desacoplamiento
 - **Interfaces bien definidas**: Contratos claros entre servicios
 - **Versionado de APIs**: Gestión de versiones de interfaces
 - **Service discovery**: Descubrimiento dinámico de servicios
 - **API Gateway**: Punto de entrada unificado
 - **Circuit breaker**: Prevención de cascada de fallos
+
+> **Ver también**: [14 - Patrones de Resiliencia](14-patrones-resiliencia.md) para circuit breakers y patrones de resiliencia
 
 ## Arquitectura de Microservicios
 

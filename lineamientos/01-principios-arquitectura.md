@@ -13,12 +13,16 @@ Este lineamiento establece los principios fundamentales que guían todas las dec
 - **Validación de entrada**: Validar y sanitizar todas las entradas de datos
 - **Cifrado en tránsito y reposo**: Proteger datos sensibles en todo momento
 
+> **Ver también**: [08 - Seguridad](08-seguridad.md) para implementación detallada
+
 ### 2. Escalabilidad Horizontal y Vertical
 - **Escalabilidad horizontal**: Diseñar para crecer agregando más instancias
 - **Escalabilidad vertical**: Optimizar recursos de cada instancia
 - **Stateless services**: Servicios sin estado para facilitar escalado
 - **Load balancing**: Distribuir carga entre múltiples instancias
 - **Auto-scaling**: Escalado automático basado en métricas
+
+> **Ver también**: [10 - Performance y Optimización](10-performance-y-optimizacion.md) para estrategias de escalabilidad
 
 ### 3. Desacoplamiento y Modularidad
 - **Arquitectura modular**: Componentes independientes y reutilizables
@@ -27,12 +31,16 @@ Este lineamiento establece los principios fundamentales que guían todas las dec
 - **Microservicios**: Cuando aporten valor real al negocio
 - **API-first design**: Diseñar APIs antes de implementar
 
+> **Ver también**: [05 - Microservicios](05-microservicios.md), [06 - Arquitectura Orientada a Eventos](06-arquitectura-orientada-eventos.md), [04 - APIs y Contratos](04-apis-y-contratos.md)
+
 ### 4. Reutilización y Estandarización
 - **Componentes reutilizables**: Librerías y servicios compartidos
 - **Patrones de diseño**: Aplicar patrones probados y documentados
 - **Estándares de código**: Convenciones consistentes en toda la organización
 - **Shared libraries**: Librerías compartidas para funcionalidad común
 - **Templates y scaffolding**: Plantillas para acelerar desarrollo
+
+> **Ver también**: [03 - Stack Tecnológico](03-stack-tecnologico.md) para estándares tecnológicos
 
 ### 5. Simplicidad y Mantenibilidad
 - **KISS (Keep It Simple, Stupid)**: Preferir soluciones simples
@@ -48,6 +56,8 @@ Este lineamiento establece los principios fundamentales que guían todas las dec
 - **Monitoring automatizado**: Alertas y métricas automáticas
 - **Deployment automatizado**: Despliegues sin intervención manual
 
+> **Ver también**: [10 - DevOps y Entornos](10-devops-y-entornos.md), [09 - Testing Strategy](09-testing-strategy.md)
+
 ### 7. Observabilidad y Monitorización
 - **Logging estructurado**: Logs consistentes y estructurados
 - **Métricas de negocio**: KPIs y métricas de negocio visibles
@@ -55,12 +65,16 @@ Este lineamiento establece los principios fundamentales que guían todas las dec
 - **Health checks**: Verificación de salud de servicios
 - **Alerting inteligente**: Alertas basadas en umbrales y patrones
 
+> **Ver también**: [09 - Observabilidad y Monitorización](09-observabilidad-y-monitorizacion.md)
+
 ### 8. Portabilidad y Flexibilidad
 - **Cloud-agnostic**: Diseñar para ser portable entre nubes
 - **Containerización**: Usar contenedores para portabilidad
 - **Configuration external**: Configuración externa al código
 - **Feature flags**: Control granular de funcionalidades
 - **Multi-environment**: Soporte para múltiples entornos
+
+> **Ver también**: [13 - Gestión de Configuración](13-gestion-configuracion.md), [17 - Arquitectura Serverless](17-arquitectura-serverless.md)
 
 ### 9. Documentación y Conocimiento
 - **Documentación viva**: Documentación actualizada y accesible
@@ -75,6 +89,8 @@ Este lineamiento establece los principios fundamentales que guían todas las dec
 - **Static analysis**: Análisis estático de código
 - **Performance testing**: Tests de rendimiento regulares
 - **Security testing**: Tests de seguridad automatizados
+
+> **Ver también**: [09 - Testing Strategy](09-testing-strategy.md)
 
 ## Objetivos Estratégicos
 

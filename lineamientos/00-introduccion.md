@@ -25,35 +25,35 @@ Estos lineamientos aplican a:
 ### **Categorías Principales:**
 
 #### **1. Fundamentos (01-03)**
-- **01 - Principios de Arquitectura**: Principios fundamentales y decisiones estratégicas
-- **02 - Gobernanza y Compliance**: Procesos, políticas y cumplimiento normativo
-- **03 - Stack Tecnológico**: Lenguajes, frameworks y herramientas
+- **[01 - Principios de Arquitectura](01-principios-arquitectura.md)**: Principios fundamentales y decisiones estratégicas
+- **[02 - Gobernanza y Compliance](02-gobernanza-y-compliance.md)**: Procesos, políticas y cumplimiento normativo
+- **[03 - Stack Tecnológico](03-stack-tecnologico.md)**: Lenguajes, frameworks y herramientas
 
 #### **2. Diseño y Patrones (04-07)**
-- **04 - APIs y Contratos**: Diseño de APIs REST, GraphQL y contratos de servicios
-- **05 - Microservicios**: Arquitectura de microservicios y patrones de comunicación
-- **06 - Arquitectura Orientada a Eventos**: Event-driven architecture y message brokers
-- **07 - Datos y Persistencia**: Estrategias de datos, bases de datos y caching
+- **[04 - APIs y Contratos](04-apis-y-contratos.md)**: Diseño de APIs REST, GraphQL y contratos de servicios
+- **[05 - Microservicios](05-microservicios.md)**: Arquitectura de microservicios y patrones de comunicación
+- **[06 - Arquitectura Orientada a Eventos](06-arquitectura-orientada-eventos.md)**: Event-driven architecture y message brokers
+- **[07 - Datos y Persistencia](07-datos-y-persistencia.md)**: Estrategias de datos, bases de datos y caching
 
 #### **3. Seguridad y Calidad (08-10)**
-- **08 - Seguridad Arquitectónica**: Seguridad por diseño, autenticación y autorización
-- **09 - Testing Strategy**: Estrategias de testing, tipos de pruebas y automatización
-- **10 - Performance y Optimización**: Rendimiento, escalabilidad y optimización
+- **[08 - Seguridad](08-seguridad.md)**: Seguridad por diseño, autenticación y autorización
+- **[09 - Testing Strategy](09-testing-strategy.md)**: Estrategias de testing, tipos de pruebas y automatización
+- **[10 - Performance y Optimización](10-performance-y-optimizacion.md)**: Rendimiento, escalabilidad y optimización
 
 #### **4. Operaciones y DevOps (11-14)**
-- **11 - DevOps y Entornos**: CI/CD, infraestructura como código y gestión de entornos
-- **12 - Observabilidad y Monitorización**: Logging, métricas, tracing y alerting
-- **13 - Gestión de Configuración**: Feature flags, secretos y configuración centralizada
-- **14 - Patrones de Resiliencia**: Circuit breakers, retry patterns y fault tolerance
+- **[10 - DevOps y Entornos](10-devops-y-entornos.md)**: CI/CD, infraestructura como código y gestión de entornos
+- **[09 - Observabilidad y Monitorización](09-observabilidad-y-monitorizacion.md)**: Logging, métricas, tracing y alerting
+- **[13 - Gestión de Configuración](13-gestion-configuracion.md)**: Feature flags, secretos y configuración centralizada
+- **[14 - Patrones de Resiliencia](14-patrones-resiliencia.md)**: Circuit breakers, retry patterns y fault tolerance
 
 #### **5. Frontend y UX (15-16)**
-- **15 - Arquitectura Frontend**: React, Angular, patrones de componentes y optimización
-- **16 - Integración y ETL**: Estrategias de integración, ETL y data pipelines
+- **[15 - Arquitectura Frontend](15-arquitectura-frontend.md)**: React, Angular, patrones de componentes y optimización
+- **[16 - Integración y ETL](16-integracion-y-etl.md)**: Estrategias de integración, ETL y data pipelines
 
 #### **6. Cloud y Modernización (17-19)**
-- **17 - Arquitectura Serverless**: AWS Lambda, funciones serverless y event-driven
-- **18 - Modernización y Stack Heredado**: Estrategias de migración y modernización
-- **19 - Disaster Recovery**: Backup, recuperación y continuidad del negocio
+- **[17 - Arquitectura Serverless](17-arquitectura-serverless.md)**: AWS Lambda, funciones serverless y event-driven
+- **[18 - Modernización y Stack Heredado](18-modernizacion-y-stack-heredado.md)**: Estrategias de migración y modernización
+- **[19 - Disaster Recovery](19-disaster-recovery.md)**: Backup, recuperación y continuidad del negocio
 
 ### **Estructura Consistente de Cada Lineamiento:**
 

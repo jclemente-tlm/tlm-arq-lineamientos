@@ -4,6 +4,8 @@
 
 DevOps es una práctica que combina desarrollo de software (Dev) y operaciones de TI (Ops) para acortar el ciclo de vida del desarrollo de sistemas y proporcionar entrega continua de valor. En nuestro contexto, DevOps abarca automatización, infraestructura como código, monitoreo continuo y cultura de colaboración.
 
+> **Ver también**: [09 - Testing Strategy](09-testing-strategy.md) para integración de pruebas, [09 - Observabilidad y Monitorización](09-observabilidad-y-monitorizacion.md) para monitoreo continuo
+
 ## Principios Fundamentales
 
 ### 1. Automatización Completa
@@ -12,17 +14,23 @@ DevOps es una práctica que combina desarrollo de software (Dev) y operaciones d
 - **Testing Automatizado**: Integrar pruebas unitarias, de integración y E2E en el pipeline
 - **Despliegues Automatizados**: Eliminar intervención manual en despliegues
 
+> **Ver también**: [09 - Testing Strategy](09-testing-strategy.md) para estrategias de testing automatizado
+
 ### 2. Entornos Consistentes
 - **Reproducibilidad**: Todos los entornos deben ser idénticos en configuración
 - **Versionado**: Control de versiones para configuraciones y dependencias
 - **Aislamiento**: Separación clara entre entornos de desarrollo, testing y producción
 - **Gestión de Configuración**: Centralizar y versionar configuraciones
 
+> **Ver también**: [13 - Gestión de Configuración](13-gestion-configuracion.md) para gestión de configuraciones
+
 ### 3. Seguridad Integrada
 - **Shift Left Security**: Integrar seguridad desde el inicio del desarrollo
 - **Análisis Estático**: Validación automática de código y configuración
 - **Gestión de Secretos**: Manejo seguro de credenciales y configuraciones sensibles
 - **Compliance Automatizado**: Verificación continua de cumplimiento normativo
+
+> **Ver también**: [08 - Seguridad](08-seguridad.md) para principios de seguridad, [02 - Gobernanza y Compliance](02-gobernanza-y-compliance.md) para cumplimiento normativo
 
 ## Stack Tecnológico DevOps
 
@@ -140,6 +148,7 @@ jobs:
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+```
 
 ##### Jenkins
 ```groovy

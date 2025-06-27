@@ -4,6 +4,8 @@
 
 Este lineamiento establece los lenguajes de programación, frameworks y tecnologías preferidos para nuevos desarrollos, así como las estrategias de modernización para el stack heredado. El objetivo es estandarizar las tecnologías utilizadas, facilitar el mantenimiento y promover la adopción de mejores prácticas de la industria.
 
+> **Ver también**: [18 - Modernización y Stack Heredado](18-modernizacion-y-stack-heredado.md) para estrategias detalladas de migración
+
 ## Stack Tecnológico
 
 ### Stack Objetivo (Nuevos Desarrollos)
@@ -16,6 +18,8 @@ Este lineamiento establece los lenguajes de programación, frameworks y tecnolog
 - **FluentValidation**: Validación de datos
 - **AutoMapper**: Mapeo de objetos
 
+> **Ver también**: [04 - APIs y Contratos](04-apis-y-contratos.md) para mejores prácticas de APIs
+
 #### Frontend
 - **React 18+**: Framework principal para aplicaciones web
 - **TypeScript**: Tipado estático para JavaScript
@@ -23,16 +27,22 @@ Este lineamiento establece los lenguajes de programación, frameworks y tecnolog
 - **Next.js**: Framework React para SSR/SSG
 - **Tailwind CSS**: Framework CSS utility-first
 
+> **Ver también**: [15 - Arquitectura Frontend](15-arquitectura-frontend.md) para patrones y mejores prácticas
+
 #### Base de Datos
 - **PostgreSQL 15+**: Base de datos relacional principal
 - **DynamoDB**: Base de datos NoSQL para casos específicos
 - **Redis**: Cache y almacenamiento en memoria
+
+> **Ver también**: [07 - Datos y Persistencia](07-datos-y-persistencia.md) para estrategias de datos
 
 #### Cloud y Infraestructura
 - **AWS**: Plataforma cloud principal
 - **AWS Lambda**: Serverless para funciones específicas
 - **Docker**: Containerización
 - **Kubernetes**: Orquestación de contenedores (cuando sea necesario)
+
+> **Ver también**: [17 - Arquitectura Serverless](17-arquitectura-serverless.md), [10 - DevOps y Entornos](10-devops-y-entornos.md)
 
 ### Stack Heredado (Mantenimiento)
 

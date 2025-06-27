@@ -4,6 +4,8 @@
 
 Este lineamiento establece los principios, patrones y mejores prácticas de seguridad para proteger aplicaciones, datos y infraestructura. Se enfoca en implementar seguridad por diseño y defensa en profundidad en todos los niveles de la arquitectura.
 
+> **Ver también**: [01 - Principios de Arquitectura](01-principios-arquitectura.md) para principios fundamentales de seguridad, [02 - Gobernanza y Compliance](02-gobernanza-y-compliance.md) para cumplimiento normativo
+
 ## Principios Fundamentales
 
 ### Security by Design
@@ -20,12 +22,16 @@ Este lineamiento establece los principios, patrones y mejores prácticas de segu
 - **Single Sign-On**: SSO para aplicaciones internas
 - **Session management**: Gestión segura de sesiones
 
+> **Ver también**: [04 - APIs y Contratos](04-apis-y-contratos.md) para implementación de autenticación en APIs
+
 ### Protección de Datos
 - **Cifrado en tránsito**: TLS 1.3 para comunicaciones
 - **Cifrado en reposo**: AES-256 para datos sensibles
 - **Data classification**: Clasificación de datos por sensibilidad
 - **Data masking**: Enmascaramiento de datos sensibles
 - **Data retention**: Políticas de retención de datos
+
+> **Ver también**: [07 - Datos y Persistencia](07-datos-y-persistencia.md) para estrategias de protección de datos
 
 ## Implementación con .NET 8
 

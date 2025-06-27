@@ -13,11 +13,15 @@ Este lineamiento establece los principios y procesos de gobernanza tecnológica 
 - **Consistencia**: Aplicar estándares uniformes en toda la organización
 - **Evolución controlada**: Permitir innovación manteniendo estabilidad
 
+> **Ver también**: [01 - Principios de Arquitectura](01-principios-arquitectura.md) para principios fundamentales
+
 ### Compliance y Regulaciones
 - **Cumplimiento proactivo**: Anticipar y cumplir regulaciones antes de que sean obligatorias
 - **Auditoría continua**: Monitorear y validar el cumplimiento regularmente
 - **Documentación obligatoria**: Mantener evidencia de cumplimiento
 - **Capacitación**: Asegurar que los equipos conozcan las regulaciones aplicables
+
+> **Ver también**: [08 - Seguridad](08-seguridad.md) para implementación de controles de seguridad
 
 ## Estructura de Gobernanza
 
@@ -116,6 +120,8 @@ Este lineamiento establece los principios y procesos de gobernanza tecnológica 
 - Auditoría interna de cumplimiento
 - Corrección de desviaciones
 - Preparación para auditorías externas
+
+> **Ver también**: [09 - Observabilidad y Monitorización](09-observabilidad-y-monitorizacion.md) para auditoría y logging
 
 ## Architecture Decision Records (ADR)
 

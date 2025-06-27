@@ -4,6 +4,8 @@
 
 Este lineamiento define la estrategia integral de testing para asegurar la calidad del software a través de diferentes niveles de pruebas, automatización y métricas de calidad. El objetivo es detectar defectos temprano, reducir costos de mantenimiento y garantizar la confiabilidad de los sistemas.
 
+> **Ver también**: [01 - Principios de Arquitectura](01-principios-arquitectura.md) para principios de calidad, [10 - DevOps y Entornos](10-devops-y-entornos.md) para integración en CI/CD
+
 ## Principios Fundamentales
 
 ### Pirámide de Testing
@@ -23,6 +25,8 @@ Este lineamiento define la estrategia integral de testing para asegurar la calid
 - **Gates de calidad**: Bloqueo de despliegues si las pruebas fallan
 - **Monitoreo post-producción**: Testing en producción con feature flags
 - **Mejora continua**: Análisis de métricas para optimizar estrategia
+
+> **Ver también**: [10 - DevOps y Entornos](10-devops-y-entornos.md) para pipelines de CI/CD
 
 ## Estrategia por Niveles
 
