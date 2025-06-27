@@ -349,7 +349,7 @@ public class PerformanceTest
 - [Resilience4j - Patrones de resiliencia]
 
 ### Recursos Adicionales
-- [Web.dev - Performance guidelines]
-- [Google PageSpeed Insights]
-- [GTmetrix - Análisis de performance web]
-- [Lighthouse - Auditoría de performance]
+- [ASP.NET Core Performance Best Practices]
+- [Entity Framework Performance Tips]
+- [.NET Performance Guidelines]
+- [Performance Testing Best Practices]

@@ -826,3 +826,9 @@ resources:
 - **GitHub Actions**: CI/CD workflows
 - **Jenkins**: Build automation
 - **AWS CodeBuild**: Build service
+
+### Herramientas de Infraestructura como Código
+- **AWS CDK**: TypeScript/JavaScript (para definición de infraestructura)
+- **Terraform**: Infraestructura como código multiplataforma
+- **AWS SAM**: Serverless Application Model para .NET
+- **Pulumi**: Infraestructura como código con .NET

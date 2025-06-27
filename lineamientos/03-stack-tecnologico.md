@@ -16,7 +16,7 @@ Este lineamiento establece los lenguajes de programación, frameworks y tecnolog
 - **Entity Framework Core**: ORM para acceso a datos
 - **MediatR**: Patrón mediator para CQRS
 - **FluentValidation**: Validación de datos
-- **AutoMapper**: Mapeo de objetos
+- **Mapster**: Mapeo de objetos
 
 > **Ver también**: [04 - APIs y Contratos](04-apis-y-contratos.md) para mejores prácticas de APIs
 
@@ -49,8 +49,8 @@ Este lineamiento establece los lenguajes de programación, frameworks y tecnolog
 #### Tecnologías en Mantenimiento
 - **Oracle 19c**: Base de datos heredada (migración gradual a PostgreSQL)
 - **C# .NET Framework**: Aplicaciones legacy (migración a .NET 8)
-- **Python**: Scripts y herramientas de automatización
-- **.NET Core**: Versiones anteriores (migración a .NET 8)
+- **C# .NET Core**: Versiones anteriores (migración a .NET 8)
+- **Scripts de automatización**: Migrar a PowerShell o .NET Console Apps
 
 ## Principios de Selección Tecnológica
 
@@ -138,25 +138,22 @@ public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
     private readonly ILogger<UserService> _logger;
-    private readonly IMapper _mapper;
 
     public UserService(
         IUserRepository userRepository,
-        ILogger<UserService> logger,
-        IMapper mapper)
+        ILogger<UserService> logger)
     {
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
     }
 
     public async Task<Result<UserDto>> CreateUserAsync(CreateUserRequest request)
     {
         try
         {
-            var user = _mapper.Map<User>(request);
+            var user = request.Adapt<User>();
             var createdUser = await _userRepository.CreateAsync(user);
-            var userDto = _mapper.Map<UserDto>(createdUser);
+            var userDto = createdUser.Adapt<UserDto>();
 
             _logger.LogInformation("User created successfully: {UserId}", createdUser.Id);
             return Result<UserDto>.Success(userDto);
@@ -166,6 +163,20 @@ public class UserService : IUserService
             _logger.LogError(ex, "Error creating user");
             return Result<UserDto>.Failure("Error creating user");
         }
+    }
+}
+
+// Configuración de Mapster
+public class MapsterConfig : IRegister
+{
+    public void Register(TypeAdapterConfig config)
+    {
+        config.NewConfig<CreateUserRequest, User>()
+            .Map(dest => dest.CreatedAt, src => DateTime.UtcNow)
+            .Map(dest => dest.IsActive, src => true);
+
+        config.NewConfig<User, UserDto>()
+            .Map(dest => dest.FullName, src => $"{src.FirstName} {src.LastName}");
     }
 }
 ```
@@ -219,14 +230,15 @@ export const UserList: React.FC<UserListProps> = ({
   <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
   <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
-  <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
+  <PackageReference Include="Mapster" Version="8.0.0" />
+  <PackageReference Include="Mapster.DependencyInjection" Version="2.0.0" />
   <PackageReference Include="FluentValidation.AspNetCore" Version="11.0.0" />
 </ItemGroup>
 ```
 
-### Node.js Dependencies
+### Frontend Dependencies
 ```json
-// Ejemplo: package.json para React/TypeScript
+// Ejemplo: package.json para React/TypeScript (solo frontend)
 {
   "dependencies": {
     "react": "^18.2.0",
@@ -253,13 +265,13 @@ export const UserList: React.FC<UserListProps> = ({
 
 ### Herramientas de Build y CI/CD
 - **MSBuild**: Build system para .NET
-- **npm/yarn**: Package manager para Node.js
+- **npm/yarn**: Package manager para frontend (React/TypeScript)
 - **Docker**: Containerización
 - **GitHub Actions**: CI/CD pipeline
 
 ### Herramientas de Testing
 - **xUnit**: Testing framework para .NET
-- **Jest**: Testing framework para JavaScript/TypeScript
+- **Jest**: Testing framework para JavaScript/TypeScript (frontend)
 - **Playwright**: E2E testing para aplicaciones web
 - **Postman**: Testing de APIs
 
@@ -316,3 +328,21 @@ export const UserList: React.FC<UserListProps> = ({
 - [Oracle to PostgreSQL Migration Tools]
 - [.NET Framework to .NET Migration Guide]
 - [TypeScript Migration Guide]
+
+### Configuración de Mapster
+```csharp
+// Registro en Program.cs
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var builder = WebApplication.CreateBuilder(args);
+
+        // Registrar Mapster
+        builder.Services.AddMapster();
+        builder.Services.AddMapster(new MapsterConfig());
+
+        // ... resto de la configuración
+    }
+}
+```

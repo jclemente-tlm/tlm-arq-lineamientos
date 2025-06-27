@@ -385,42 +385,43 @@ Monitorear la salud de los servicios y detectar problemas.
 
 #### Implementación
 ```csharp
-// Ejemplo: Health Check con Spring Boot Actuator
-@Component
-public class DatabaseHealthIndicator : IHealthIndicator
+// Ejemplo: Health Check con .NET Health Checks
+public class DatabaseHealthCheck : IHealthCheck
 {
-    private readonly DataSource _dataSource;
+    private readonly IDbConnection _dbConnection;
 
-    public DatabaseHealthIndicator(DataSource dataSource)
+    public DatabaseHealthCheck(IDbConnection dbConnection)
     {
-        _dataSource = dataSource;
+        _dbConnection = dbConnection;
     }
 
-    public Health health()
+    public async Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
     {
-        try (var connection = _dataSource.getConnection())
+        try
         {
-            if (connection.isValid(1000))
-            {
-                return Health.up()
-                    .withDetail("database", "Available")
-                    .withDetail("connection", "OK")
-                    .build();
-            }
-            else
-            {
-                return Health.down()
-                    .withDetail("database", "Unavailable")
-                    .withDetail("connection", "Failed")
-                    .build();
-            }
+            using var connection = _dbConnection;
+            await connection.OpenAsync(cancellationToken);
+
+            return HealthCheckResult.Healthy(
+                description: "Database is available",
+                data: new Dictionary<string, object>
+                {
+                    ["database"] = "Available",
+                    ["connection"] = "OK"
+                });
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            return Health.down()
-                .withDetail("database", "Error")
-                .withDetail("error", e.Message)
-                .build();
+            return HealthCheckResult.Unhealthy(
+                description: "Database is unavailable",
+                exception: ex,
+                data: new Dictionary<string, object>
+                {
+                    ["database"] = "Error",
+                    ["error"] = ex.Message
+                });
         }
     }
 }
@@ -593,8 +594,7 @@ public class ResilienceTest
 - [Chaos Toolkit - Framework de chaos engineering]
 
 ### Recursos Adicionales
-- [Resilience Patterns - Martin Fowler]
-- [Circuit Breaker Pattern - Netflix]
-- [Chaos Engineering - Principles]
-- [Resilience Engineering - Best Practices]
-- [Resilience Engineering - Best Practices]
+- [Polly - .NET Resilience and Transient-Fault-Handling Library]
+- [Circuit Breaker Pattern - Martin Fowler]
+- [Retry Pattern - Microsoft Docs]
+- [Bulkhead Pattern - Microsoft Docs]

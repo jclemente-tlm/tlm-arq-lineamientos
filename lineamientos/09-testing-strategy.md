@@ -61,9 +61,8 @@ public void ShouldCalculateDiscountCorrectly()
 
 #### Herramientas Recomendadas
 - **.NET**: xUnit, Moq, FluentAssertions
-- **Java**: JUnit 5, Mockito, AssertJ
-- **JavaScript**: Jest, Mocha, Sinon
-- **Python**: pytest, unittest.mock
+- **JavaScript/TypeScript**: Jest, Mocha, Sinon (para frontend)
+- **PowerShell**: Para scripts de automatización y testing de infraestructura
 
 ### 2. Testing de Integración
 
@@ -162,9 +161,10 @@ Verificar que el sistema cumpla con los requisitos de rendimiento bajo carga.
 
 #### Herramientas
 - **JMeter**: Testing de carga general
-- **Gatling**: Testing de APIs con Scala
-- **Artillery**: Testing de APIs con JavaScript
-- **K6**: Testing moderno con JavaScript
+- **NBomber**: Testing de carga para .NET
+- **Artillery**: Testing de APIs con JavaScript (para frontend)
+- **K6**: Testing moderno con JavaScript (para frontend)
+- **Postman**: Testing de APIs REST
 
 ### 5. Testing de Seguridad
 
@@ -410,9 +410,15 @@ jobs:
 - [Postman - API Testing]
 - [Cypress - E2E Testing]
 - [Jest - JavaScript Testing]
-- [JUnit - Java Testing]
+- [xUnit - .NET Testing]
 
 ### Comunidades y Recursos
 - [Ministry of Testing]
 - [Test Automation University]
 - [Software Testing Help]
+
+### Recursos Adicionales
+- [xUnit - .NET Testing Framework]
+- [Jest - JavaScript Testing]
+- [PowerShell Testing - Pester]
+- [Testing Best Practices - Martin Fowler]

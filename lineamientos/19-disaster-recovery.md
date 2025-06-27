@@ -360,35 +360,33 @@ public class DisasterRecoveryService
         _logger = logger;
     }
 
-    public async Task PerformFailoverAsync()
+    public async Task ExecuteFailoverAsync()
     {
         try
         {
-            // 1. Verificar salud de región primaria
+            _logger.LogInformation("Starting automatic failover procedure");
+
+            // 1. Verificar salud del sitio primario
             if (!await CheckPrimaryHealthAsync())
             {
-                _logger.LogWarning("Primary region unhealthy, initiating failover");
+                _logger.LogWarning("Primary site is unhealthy, initiating failover");
 
                 // 2. Activar región secundaria
                 await ActivateSecondaryRegionAsync();
 
-                // 3. Actualizar DNS
+                // 3. Actualizar registros DNS
                 await UpdateDnsRecordsAsync();
 
-                // 4. Verificar servicios
+                // 4. Verificar salud de servicios
                 await VerifyServicesHealthAsync();
 
-                // 5. Notificar equipo
+                // 5. Notificar completado
                 await SendNotificationAsync("Failover completed");
-            }
-            else
-            {
-                _logger.LogInformation("Primary region healthy, no failover needed");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failover process failed");
+            _logger.LogError(ex, "Failover procedure failed");
             throw;
         }
     }
@@ -397,46 +395,33 @@ public class DisasterRecoveryService
     {
         try
         {
-            // Verificar instancias EC2 en región primaria
             var describeInstancesRequest = new DescribeInstancesRequest
             {
                 Filters = new List<Filter>
                 {
-                    new Filter
-                    {
-                        Name = "tag:Environment",
-                        Values = new List<string> { "production" }
-                    },
-                    new Filter
-                    {
-                        Name = "instance-state-name",
-                        Values = new List<string> { "running" }
-                    }
+                    new Filter("tag:Environment", new List<string> { "production" }),
+                    new Filter("instance-state-name", new List<string> { "running", "pending" })
                 }
             };
 
             var response = await _ec2Client.DescribeInstancesAsync(describeInstancesRequest);
 
-            // Verificar que al menos el 80% de las instancias estén corriendo
             var totalInstances = response.Reservations.Sum(r => r.Instances.Count);
             var runningInstances = response.Reservations
-                .Sum(r => r.Instances.Count(i => i.State.Name.Value == "running"));
+                .SelectMany(r => r.Instances)
+                .Count(i => i.State.Name.Value == "running");
 
             return totalInstances > 0 && (double)runningInstances / totalInstances >= 0.8;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to check primary region health");
+            _logger.LogError(ex, "Failed to check primary health");
             return false;
         }
     }
 
     private async Task ActivateSecondaryRegionAsync()
     {
-        // Implementar lógica para activar servicios en región secundaria
-        _logger.LogInformation("Activating secondary region services");
-
-        // Ejemplo: Iniciar instancias en región secundaria
         var startInstancesRequest = new StartInstancesRequest
         {
             InstanceIds = new List<string> { "i-1234567890abcdef0" }
@@ -447,10 +432,9 @@ public class DisasterRecoveryService
 
     private async Task UpdateDnsRecordsAsync()
     {
-        // Actualizar registros DNS para apuntar a región secundaria
         var changeRequest = new ChangeResourceRecordSetsRequest
         {
-            HostedZoneId = "Z1234567890ABC",
+            HostedZoneId = "Z1234567890ABCDEF",
             ChangeBatch = new ChangeBatch
             {
                 Changes = new List<Change>
@@ -474,39 +458,26 @@ public class DisasterRecoveryService
         };
 
         await _route53Client.ChangeResourceRecordSetsAsync(changeRequest);
-        _logger.LogInformation("DNS records updated successfully");
     }
 
     private async Task VerifyServicesHealthAsync()
     {
-        // Verificar que los servicios en región secundaria estén funcionando
         using var httpClient = new HttpClient();
-
         var healthEndpoints = new[]
         {
-            "https://api-dr.example.com/health",
-            "https://web-dr.example.com/health",
-            "https://admin-dr.example.com/health"
+            "http://secondary-api.example.com/health",
+            "http://secondary-api.example.com/health/ready",
+            "http://secondary-api.example.com/health/live"
         };
 
         foreach (var endpoint in healthEndpoints)
         {
-            try
+            var response = await httpClient.GetAsync(endpoint);
+            if (!response.IsSuccessStatusCode)
             {
-                var response = await httpClient.GetAsync(endpoint);
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new Exception($"Health check failed for {endpoint}");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Health check failed for {Endpoint}", endpoint);
-                throw;
+                throw new Exception($"Health check failed for {endpoint}");
             }
         }
-
-        _logger.LogInformation("All services verified as healthy");
     }
 
     private async Task SendNotificationAsync(string message)

@@ -110,11 +110,10 @@ Gestionar configuraciones de múltiples servicios desde un punto central, facili
 ```
 
 #### Servicios de Configuración
-- **Azure App Configuration**: Para ecosistemas .NET/Azure
-- **AWS Systems Manager Parameter Store**: Para AWS
-- **Spring Cloud Config**: Para ecosistemas Java/Spring
-- **HashiCorp Consul**: Para microservicios
-- **etcd**: Para Kubernetes
+- **AWS Systems Manager Parameter Store**: Configuración centralizada en AWS
+- **Azure App Configuration**: Servicio de configuración de Azure
+- **HashiCorp Consul**: Service mesh y configuración distribuida
+- **.NET Configuration**: Sistema nativo de configuración de .NET
 
 ### 3. Gestión de Secretos
 
@@ -271,36 +270,97 @@ public class UserServiceOptions
 
 ### 3. Validación de Configuración
 
-#### Validación con Spring Boot
-```java
+#### Validación con .NET 8
+```csharp
 // Ejemplo: Validación de configuración
-@ConfigurationProperties(prefix = "app")
-@Validated
-public class AppConfig {
+public class AppConfig
+{
+    [Required]
+    [Range(1, 100)]
+    public int MaxUsersPerPage { get; set; }
 
-    @NotNull
-    @Min(1)
-    @Max(100)
-    private Integer maxUsersPerPage;
+    [Required]
+    [RegularExpression("^(true|false)$")]
+    public string FeatureNewUi { get; set; }
 
-    @NotNull
-    @Pattern(regexp = "^(true|false)$")
-    private String featureNewUi;
-
-    @Valid
-    private SecurityConfig security;
-
-    // Getters y setters
+    [ValidateObject]
+    public SecurityConfig Security { get; set; }
 }
 
-@Component
-public class ConfigurationValidator {
+public class SecurityConfig
+{
+    [Required]
+    public string JwtSecret { get; set; }
 
-    @EventListener
-    public void handleApplicationReady(ApplicationReadyEvent event) {
-        // Validar configuración crítica
-        validateCriticalConfig();
+    [Range(1, 24)]
+    public int TokenExpirationHours { get; set; }
+}
+
+public class ConfigurationValidator
+{
+    private readonly ILogger<ConfigurationValidator> _logger;
+
+    public ConfigurationValidator(ILogger<ConfigurationValidator> logger)
+    {
+        _logger = logger;
     }
+
+    public void ValidateCriticalConfig(IConfiguration configuration)
+    {
+        // Validar configuración crítica
+        var appConfig = configuration.GetSection("App").Get<AppConfig>();
+
+        if (appConfig == null)
+        {
+            throw new InvalidOperationException("App configuration is missing");
+        }
+
+        var validationResults = new List<ValidationResult>();
+        var validationContext = new ValidationContext(appConfig);
+
+        if (!Validator.TryValidateObject(appConfig, validationContext, validationResults, true))
+        {
+            var errors = string.Join(", ", validationResults.Select(v => v.ErrorMessage));
+            throw new InvalidOperationException($"Configuration validation failed: {errors}");
+        }
+
+        _logger.LogInformation("Configuration validation completed successfully");
+    }
+}
+```
+
+### Auditoría de Cambios
+```csharp
+// Ejemplo: Auditoría de cambios de configuración
+public class ConfigurationAuditService
+{
+    private readonly ILogger<ConfigurationAuditService> _logger;
+    private readonly IAuditService _auditService;
+
+    public ConfigurationAuditService(
+        ILogger<ConfigurationAuditService> logger,
+        IAuditService auditService)
+    {
+        _logger = logger;
+        _auditService = auditService;
+    }
+
+    public void HandleConfigurationChange(ConfigurationChangeEvent changeEvent)
+    {
+        _logger.LogInformation("Configuration changed: {Key} = {Value} by user: {User}",
+            changeEvent.Key, changeEvent.Value, changeEvent.User);
+
+        // Enviar a sistema de auditoría
+        _auditService.RecordConfigurationChange(changeEvent);
+    }
+}
+
+public class ConfigurationChangeEvent
+{
+    public string Key { get; set; }
+    public string Value { get; set; }
+    public string User { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }
 ```
 
@@ -338,34 +398,61 @@ management:
 ## Seguridad y Compliance
 
 ### Control de Acceso
-```yaml
-# Ejemplo: Control de acceso con Spring Security
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: https://auth.example.com
-    user:
-      roles: ADMIN,USER
+```json
+// Ejemplo: Control de acceso con .NET Identity
+{
+  "Authentication": {
+    "JwtBearer": {
+      "Authority": "https://auth.example.com",
+      "Audience": "api.example.com",
+      "RequireHttpsMetadata": true
+    }
+  },
+  "Authorization": {
+    "Policies": {
+      "AdminOnly": {
+        "RequireRole": "Admin"
+      },
+      "UserAccess": {
+        "RequireRole": ["User", "Admin"]
+      }
+    }
+  }
+}
 ```
 
 ### Auditoría de Cambios
-```java
+```csharp
 // Ejemplo: Auditoría de cambios de configuración
-@Component
-public class ConfigurationAuditService {
+public class ConfigurationAuditService
+{
+    private readonly ILogger<ConfigurationAuditService> _logger;
+    private readonly IAuditService _auditService;
 
-    private final Logger logger = LoggerFactory.getLogger(ConfigurationAuditService.class);
+    public ConfigurationAuditService(
+        ILogger<ConfigurationAuditService> logger,
+        IAuditService auditService)
+    {
+        _logger = logger;
+        _auditService = auditService;
+    }
 
-    @EventListener
-    public void handleConfigurationChange(ConfigurationChangeEvent event) {
-        logger.info("Configuration changed: {} = {} by user: {}",
-            event.getKey(), event.getValue(), event.getUser());
+    public void HandleConfigurationChange(ConfigurationChangeEvent changeEvent)
+    {
+        _logger.LogInformation("Configuration changed: {Key} = {Value} by user: {User}",
+            changeEvent.Key, changeEvent.Value, changeEvent.User);
 
         // Enviar a sistema de auditoría
-        auditService.recordConfigurationChange(event);
+        _auditService.RecordConfigurationChange(changeEvent);
     }
+}
+
+public class ConfigurationChangeEvent
+{
+    public string Key { get; set; }
+    public string Value { get; set; }
+    public string User { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }
 ```
 
@@ -411,10 +498,10 @@ public class ConfigurationAuditService {
 - [Split.io - Feature flags and experimentation]
 
 ### Herramientas de Configuración
-- [Spring Cloud Config - Configuration server]
-- [AWS Systems Manager - Parameter Store]
-- [Azure App Configuration - Configuration service]
-- [HashiCorp Consul - Service mesh and configuration]
+- **AWS Systems Manager Parameter Store**: Configuración centralizada en AWS
+- **Azure App Configuration**: Servicio de configuración de Azure
+- **HashiCorp Consul**: Service mesh y configuración distribuida
+- **.NET Configuration**: Sistema nativo de configuración de .NET
 
 ### Herramientas de Secretos
 - [AWS Secrets Manager - Secret management]
