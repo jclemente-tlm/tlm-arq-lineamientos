@@ -179,7 +179,93 @@ Identificar vulnerabilidades de seguridad antes de producción.
 - **Snyk**: Análisis de dependencias vulnerables
 - **Checkmarx**: Análisis de código fuente
 
-### 6. Testing de Accesibilidad
+### 6. Análisis de Calidad de Código
+
+#### Propósito
+Mantener estándares de calidad de código y detectar problemas temprano.
+
+#### Herramientas Principales
+
+##### SonarQube
+```xml
+<!-- Ejemplo de sonar-project.properties para .NET -->
+sonar.projectKey=my-project
+sonar.projectName=My Application
+sonar.projectVersion=1.0
+
+sonar.sources=.
+sonar.exclusions=**/bin/**,**/obj/**,**/wwwroot/**,**/node_modules/**
+
+sonar.tests=.
+sonar.test.inclusions=**/*Tests/**/*.cs,**/*Test/**/*.cs
+
+sonar.cs.opencover.reportsPaths=**/coverage.opencover.xml
+sonar.coverage.exclusions=**/*Tests/**/*,**/*Test/**/*,**/Program.cs,**/Startup.cs
+
+# Configuración de calidad
+sonar.cpd.cs.minimumTokens=100
+sonar.cpd.exclusions=**/*Tests/**/*,**/*Test/**/*
+
+# Reglas específicas para .NET
+sonar.cs.roslyn.ignoreIssues=false
+sonar.cs.roslyn.reportIssuesOnly=false
+
+# Umbrales de calidad
+sonar.coverage.minimum=80
+sonar.duplicated_lines_density.maximum=3
+sonar.maintainability_rating.maximum=A
+sonar.reliability_rating.maximum=A
+sonar.security_rating.maximum=A
+```
+
+```csharp
+// Ejemplo de configuración SonarQube en .NET
+// Directory.Build.props
+<Project>
+  <PropertyGroup>
+    <SonarQubeExclude>true</SonarQubeExclude>
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>opencover</CoverletOutputFormat>
+    <CoverletOutput>$(MSBuildThisFileDirectory)coverage.opencover.xml</CoverletOutput>
+    <ExcludeByFile>**/*Tests/**/*,**/*Test/**/*,**/Program.cs,**/Startup.cs</ExcludeByFile>
+  </PropertyGroup>
+</Project>
+```
+
+#### Métricas de Calidad
+- **Code Coverage**: Mínimo 80% de cobertura
+- **Duplicated Code**: Máximo 3% de líneas duplicadas
+- **Maintainability Rating**: A (excelente)
+- **Reliability Rating**: A (excelente)
+- **Security Rating**: A (excelente)
+- **Security Hotspots**: 0 vulnerabilidades críticas
+
+#### Reglas de Calidad
+- **Bugs**: 0 bugs críticos o mayores
+- **Vulnerabilities**: 0 vulnerabilidades críticas o mayores
+- **Code Smells**: Máximo 5% de code smells
+- **Technical Debt**: Máximo 5% de deuda técnica
+
+#### Integración en CI/CD
+```yaml
+# Ejemplo de integración SonarQube en GitHub Actions
+- name: SonarQube Analysis
+  uses: sonarqube-quality-gate-action@master
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  with:
+    scannerHome: ${{ github.workspace }}/sonar-scanner
+    args: >
+      -Dsonar.projectKey=my-project
+      -Dsonar.sources=.
+      -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
+      -Dsonar.login=${{ env.SONAR_TOKEN }}
+      -Dsonar.coverage.exclusions=**/*Tests/**/*,**/*Test/**/*
+      -Dsonar.cpd.exclusions=**/*Tests/**/*,**/*Test/**/*
+```
+
+### 7. Testing de Accesibilidad
 
 #### Propósito
 Asegurar que las aplicaciones sean accesibles para usuarios con discapacidades.

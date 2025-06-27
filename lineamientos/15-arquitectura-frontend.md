@@ -1,6 +1,6 @@
 # Arquitectura Frontend
 
-## Visión General
+## Propósito
 
 La arquitectura frontend define cómo se estructura, desarrolla y despliega la capa de presentación de las aplicaciones. En nuestro contexto, nos enfocamos en React y Angular como frameworks principales, con énfasis en escalabilidad, mantenibilidad y experiencia de usuario.
 

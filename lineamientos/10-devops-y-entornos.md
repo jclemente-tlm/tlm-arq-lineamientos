@@ -1,6 +1,6 @@
 # DevOps y Entornos
 
-## Visión General
+## Propósito
 
 DevOps es una práctica que combina desarrollo de software (Dev) y operaciones de TI (Ops) para acortar el ciclo de vida del desarrollo de sistemas y proporcionar entrega continua de valor. En nuestro contexto, DevOps abarca automatización, infraestructura como código, monitoreo continuo y cultura de colaboración.
 
@@ -29,71 +29,350 @@ DevOps es una práctica que combina desarrollo de software (Dev) y operaciones d
 ### Herramientas Principales
 
 #### CI/CD Pipelines
+
+##### GitHub Actions
 ```yaml
-# Ejemplo de Azure DevOps Pipeline para .NET 8
-trigger:
-  branches:
-    include:
-    - main
-    - develop
+# Ejemplo de GitHub Actions para .NET 8
+name: CI/CD Pipeline
 
-pool:
-  vmImage: 'ubuntu-latest'
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
 
-variables:
-  solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
-  buildConfiguration: 'Release'
-  dotNetVersion: '8.0.x'
+env:
+  DOTNET_VERSION: '8.0.x'
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-stages:
-- stage: Build
-  jobs:
-  - job: Build
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
     steps:
-    - task: UseDotNet@2
-      inputs:
-        version: $(dotNetVersion)
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Necesario para SonarQube
 
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'restore'
-        projects: '$(solution)'
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'build'
-        projects: '$(solution)'
-        arguments: '--configuration $(buildConfiguration)'
+    - name: Restore dependencies
+      run: dotnet restore
 
-    - task: DotNetCoreCLI@2
-      inputs:
-        command: 'test'
-        projects: '**/*Tests/*.csproj'
-        arguments: '--configuration $(buildConfiguration) --collect:"XPlat Code Coverage"'
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
 
-    - task: SonarQubePrepare@4
-      inputs:
-        SonarQube: 'SonarQube'
-        scannerMode: 'MSBuild'
-        projectKey: '$(Build.Repository.Name)'
-        projectName: '$(Build.Repository.Name)'
+    - name: Run tests
+      run: dotnet test --no-build --verbosity normal --configuration Release --collect:"XPlat Code Coverage"
 
-    - task: SonarQubeAnalyze@4
+    - name: SonarQube Analysis
+      uses: sonarqube-quality-gate-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+      with:
+        scannerHome: ${{ github.workspace }}/sonar-scanner
+        args: >
+          -Dsonar.projectKey=my-project
+          -Dsonar.sources=.
+          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
+          -Dsonar.login=${{ env.SONAR_TOKEN }}
 
-    - task: SonarQubePublish@4
-      inputs:
-        pollingTimeoutSec: '300'
+    - name: Checkov Security Scan
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: .
+        framework: terraform,kubernetes,dockerfile
+        output_format: sarif
+        output_file_path: checkov-results.sarif
 
-    - task: PublishBuildArtifacts@1
-      inputs:
-        pathToPublish: '$(Build.ArtifactStagingDirectory)'
-        artifactName: 'drop'
+    - name: Upload Checkov results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: checkov-results.sarif
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'my-app:latest'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: trivy-results.sarif
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, security-scan]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, tag, and push image to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: my-app
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+##### Jenkins
+```groovy
+// Ejemplo de Jenkinsfile para .NET 8
+pipeline {
+    agent any
+
+    environment {
+        DOTNET_VERSION = '8.0.x'
+        SONAR_TOKEN = credentials('sonar-token')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Setup .NET') {
+            steps {
+                sh 'dotnet --version'
+                sh 'dotnet restore'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'dotnet build --configuration Release --no-restore'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'dotnet test --configuration Release --no-build --collect:"XPlat Code Coverage"'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        dotnet sonarscanner begin /k:"my-project" /d:sonar.host.url="http://sonarqube:9000" /d:sonar.login="${SONAR_TOKEN}"
+                        dotnet build --configuration Release
+                        dotnet sonarscanner end /d:sonar.login="${SONAR_TOKEN}"
+                    '''
+                }
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                sh 'checkov -d . --output sarif --output-file-path checkov-results.sarif'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    docker.build("my-app:${env.BUILD_NUMBER}")
+                }
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    docker.withRegistry('https://your-registry.com', 'registry-credentials') {
+                        docker.image("my-app:${env.BUILD_NUMBER}").push()
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
+}
 ```
 
-#### Infraestructura como Código (Terraform)
+#### Contenedores y Orquestación
+
+##### Docker
+```dockerfile
+# Ejemplo de Dockerfile para .NET 8
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY ["MyApp.csproj", "./"]
+RUN dotnet restore "MyApp.csproj"
+COPY . .
+WORKDIR "/src/."
+RUN dotnet build "MyApp.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "MyApp.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "MyApp.dll"]
+```
+
+```yaml
+# Ejemplo de docker-compose.yml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=db;Database=myapp;User=sa;Password=Your_password123;
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_USER: sa
+      POSTGRES_PASSWORD: Your_password123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  sonarqube:
+    image: sonarqube:latest
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_JDBC_URL=jdbc:postgresql://db:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+
+networks:
+  app-network:
+    driver: bridge
+```
+
+#### Análisis de Calidad y Seguridad
+
+##### SonarQube
+```xml
+<!-- Ejemplo de sonar-project.properties -->
+sonar.projectKey=my-project
+sonar.projectName=My Application
+sonar.projectVersion=1.0
+
+sonar.sources=.
+sonar.exclusions=**/bin/**,**/obj/**,**/wwwroot/**,**/node_modules/**
+
+sonar.tests=.
+sonar.test.inclusions=**/*Tests/**/*.cs,**/*Test/**/*.cs
+
+sonar.cs.opencover.reportsPaths=**/coverage.opencover.xml
+sonar.coverage.exclusions=**/*Tests/**/*,**/*Test/**/*,**/Program.cs,**/Startup.cs
+
+sonar.cpd.cs.minimumTokens=100
+sonar.cpd.exclusions=**/*Tests/**/*,**/*Test/**/*
+
+# Configuración de reglas específicas para .NET
+sonar.cs.roslyn.ignoreIssues=false
+sonar.cs.roslyn.reportIssuesOnly=false
+```
+
+##### Checkov
+```yaml
+# Ejemplo de configuración Checkov para infraestructura
+# .checkov.yaml
+framework:
+  - terraform
+  - kubernetes
+  - dockerfile
+  - helm
+
+output: sarif
+output-file-path: checkov-results.sarif
+
+skip-path:
+  - .terraform
+  - node_modules
+
+skip-check:
+  - CKV_AWS_130  # VPC Flow Logs
+  - CKV_AWS_126  # VPC Default Security Group
+
+compact: true
+directory:
+  - .
+  - infrastructure
+  - k8s
+  - docker
+```
+
 ```hcl
-# Ejemplo de configuración Terraform para AWS
+# Ejemplo de Terraform con mejores prácticas de seguridad
+# main.tf
 terraform {
   required_version = ">= 1.0"
   required_providers {
@@ -104,11 +383,7 @@ terraform {
   }
 }
 
-provider "aws" {
-  region = var.aws_region
-}
-
-# VPC para microservicios
+# VPC con logging habilitado
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
@@ -117,171 +392,127 @@ resource "aws_vpc" "main" {
   tags = {
     Name        = "${var.environment}-vpc"
     Environment = var.environment
-    Project     = var.project_name
   }
 }
 
-# Subnets privadas para microservicios
-resource "aws_subnet" "private" {
-  count             = length(var.private_subnets)
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = var.private_subnets[count.index]
-  availability_zone = var.availability_zones[count.index]
-
-  tags = {
-    Name        = "${var.environment}-private-subnet-${count.index + 1}"
-    Environment = var.environment
-    Type        = "Private"
-  }
+# Flow logs para auditoría
+resource "aws_flow_log" "main" {
+  iam_role_arn    = aws_iam_role.flow_log.arn
+  log_destination = aws_cloudwatch_log_group.flow_log.arn
+  traffic_type    = "ALL"
+  vpc_id          = aws_vpc.main.id
 }
 
-# ECS Cluster para microservicios
-resource "aws_ecs_cluster" "main" {
-  name = "${var.environment}-${var.project_name}-cluster"
+# Security group con reglas restrictivas
+resource "aws_security_group" "app" {
+  name_prefix = "${var.environment}-app-"
+  vpc_id      = aws_vpc.main.id
 
-  setting {
-    name  = "containerInsights"
-    value = "enabled"
+  ingress {
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
+    Name        = "${var.environment}-app-sg"
     Environment = var.environment
-    Project     = var.project_name
-  }
-}
-
-# RDS PostgreSQL
-resource "aws_db_instance" "postgresql" {
-  identifier = "${var.environment}-${var.project_name}-db"
-
-  engine         = "postgres"
-  engine_version = "15.4"
-  instance_class = var.db_instance_class
-
-  allocated_storage     = var.db_allocated_storage
-  max_allocated_storage = var.db_max_allocated_storage
-  storage_encrypted     = true
-
-  db_name  = var.db_name
-  username = var.db_username
-  password = var.db_password
-
-  vpc_security_group_ids = [aws_security_group.rds.id]
-  db_subnet_group_name   = aws_db_subnet_group.main.name
-
-  backup_retention_period = 7
-  backup_window          = "03:00-04:00"
-  maintenance_window     = "sun:04:00-sun:05:00"
-
-  deletion_protection = var.environment == "prod" ? true : false
-
-  tags = {
-    Environment = var.environment
-    Project     = var.project_name
   }
 }
 ```
 
-#### Gestión de Configuración (AWS Systems Manager Parameter Store)
-```csharp
-// Ejemplo de configuración en .NET 8
-public class ConfigurationService
-{
-    private readonly IAmazonSimpleSystemsManagement _ssmClient;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<ConfigurationService> _logger;
+#### Monitoreo y Observabilidad
 
-    public ConfigurationService(
-        IAmazonSimpleSystemsManagement ssmClient,
-        IConfiguration configuration,
-        ILogger<ConfigurationService> logger)
+##### Prometheus y Grafana
+```yaml
+# Ejemplo de configuración Prometheus
+# prometheus.yml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+scrape_configs:
+  - job_name: 'dotnet-app'
+    static_configs:
+      - targets: ['localhost:5000']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['localhost:9187']
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - localhost:9093
+```
+
+```csharp
+// Ejemplo de métricas personalizadas en .NET
+public class MetricsMiddleware
+{
+    private readonly RequestDelegate _next;
+    private readonly Counter _requestCounter;
+    private readonly Histogram _requestDuration;
+
+    public MetricsMiddleware(RequestDelegate next)
     {
-        _ssmClient = ssmClient;
-        _configuration = configuration;
-        _logger = logger;
+        _next = next;
+        _requestCounter = Metrics.CreateCounter("http_requests_total", "Total HTTP requests", new CounterConfiguration
+        {
+            LabelNames = new[] { "method", "endpoint", "status" }
+        });
+        _requestDuration = Metrics.CreateHistogram("http_request_duration_seconds", "HTTP request duration", new HistogramConfiguration
+        {
+            LabelNames = new[] { "method", "endpoint" }
+        });
     }
 
-    public async Task<string> GetParameterAsync(string parameterName)
+    public async Task InvokeAsync(HttpContext context)
     {
+        var sw = Stopwatch.StartNew();
+
         try
         {
-            var request = new GetParameterRequest
-            {
-                Name = parameterName,
-                WithDecryption = true
-            };
-
-            var response = await _ssmClient.GetParameterAsync(request);
-            return response.Parameter.Value;
+            await _next(context);
         }
-        catch (Exception ex)
+        finally
         {
-            _logger.LogError(ex, "Error retrieving parameter {ParameterName}", parameterName);
-            throw;
+            sw.Stop();
+
+            _requestCounter.WithLabels(
+                context.Request.Method,
+                context.Request.Path,
+                context.Response.StatusCode.ToString()
+            ).Inc();
+
+            _requestDuration.WithLabels(
+                context.Request.Method,
+                context.Request.Path
+            ).Observe(sw.Elapsed.TotalSeconds);
         }
-    }
-
-    public async Task<Dictionary<string, string>> GetParametersByPathAsync(string path)
-    {
-        var parameters = new Dictionary<string, string>();
-        string nextToken = null;
-
-        do
-        {
-            var request = new GetParametersByPathRequest
-            {
-                Path = path,
-                Recursive = true,
-                WithDecryption = true,
-                NextToken = nextToken
-            };
-
-            var response = await _ssmClient.GetParametersByPathAsync(request);
-
-            foreach (var parameter in response.Parameters)
-            {
-                parameters[parameter.Name] = parameter.Value;
-            }
-
-            nextToken = response.NextToken;
-        } while (!string.IsNullOrEmpty(nextToken));
-
-        return parameters;
     }
 }
-```
-
-### Herramientas de Análisis y Calidad
-
-#### SonarQube Integration
-```yaml
-# SonarQube Quality Gate en Pipeline
-- task: SonarQubePublish@4
-  inputs:
-    pollingTimeoutSec: '300'
-
-- task: SonarQubeQualityGate@4
-  inputs:
-    pollingTimeoutSec: '300'
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-```
-
-#### Checkov para IaC Security
-```yaml
-# Checkov en Pipeline
-- script: |
-    pip install checkov
-    checkov -d . --framework terraform --output cli --output junitxml --output-file-path ./checkov-results
-  displayName: 'Run Checkov Security Scan'
-  condition: succeededOrFailed()
-
-- task: PublishTestResults@2
-  inputs:
-    testResultsFormat: 'JUnit'
-    testResultsFiles: '**/checkov-results.xml'
-    mergeTestResults: true
-    testRunTitle: 'Checkov Security Scan'
-  condition: succeededOrFailed()
 ```
 
 ## Estrategia de Entornos

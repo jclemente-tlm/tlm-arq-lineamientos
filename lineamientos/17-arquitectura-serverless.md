@@ -1,6 +1,6 @@
 # Arquitectura Serverless
 
-## Visión General
+## Propósito
 
 La arquitectura serverless permite ejecutar código sin gestionar servidores, pagando solo por el tiempo de ejecución real. En nuestro contexto, nos enfocamos en AWS Lambda, API Gateway, y servicios serverless para construir aplicaciones escalables, mantenibles y costo-efectivas.
 

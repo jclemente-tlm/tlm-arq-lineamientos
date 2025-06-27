@@ -386,6 +386,258 @@ public class UserServiceHealthCheck : IHealthCheck
 }
 ```
 
+## Contenedores y Orquestación
+
+### Docker para Microservicios
+```dockerfile
+# Ejemplo de Dockerfile para microservicio .NET 8
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY ["UserService/UserService.csproj", "UserService/"]
+RUN dotnet restore "UserService/UserService.csproj"
+COPY . .
+WORKDIR "/src/UserService"
+RUN dotnet build "UserService.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "UserService.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "UserService.dll"]
+```
+
+```yaml
+# Ejemplo de docker-compose.yml para microservicios
+version: '3.8'
+
+services:
+  user-service:
+    build:
+      context: .
+      dockerfile: UserService/Dockerfile
+    ports:
+      - "5001:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__UserDb=Server=user-db;Database=userdb;User=sa;Password=Your_password123;
+    depends_on:
+      - user-db
+    networks:
+      - microservices-network
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: PaymentService/Dockerfile
+    ports:
+      - "5002:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__PaymentDb=Server=payment-db;Database=paymentdb;User=sa;Password=Your_password123;
+    depends_on:
+      - payment-db
+    networks:
+      - microservices-network
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ApiGateway/Dockerfile
+    ports:
+      - "5000:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - user-service
+      - payment-service
+    networks:
+      - microservices-network
+
+  user-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: userdb
+      POSTGRES_USER: sa
+      POSTGRES_PASSWORD: Your_password123
+    volumes:
+      - user_data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+
+  payment-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: paymentdb
+      POSTGRES_USER: sa
+      POSTGRES_PASSWORD: Your_password123
+    volumes:
+      - payment_data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+
+  consul:
+    image: consul:latest
+    ports:
+      - "8500:8500"
+    command: agent -server -bootstrap-expect=1 -ui -client=0.0.0.0
+    networks:
+      - microservices-network
+
+volumes:
+  user_data:
+  payment_data:
+
+networks:
+  microservices-network:
+    driver: bridge
+```
+
+### Kubernetes para Orquestación
+```yaml
+# Ejemplo de deployment.yaml para microservicio
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  labels:
+    app: user-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+      - name: user-service
+        image: user-service:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        - name: ConnectionStrings__UserDb
+          valueFrom:
+            secretKeyRef:
+              name: user-db-secret
+              key: connection-string
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+spec:
+  selector:
+    app: user-service
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+```
+
+### Multi-stage Builds para Optimización
+```dockerfile
+# Ejemplo de multi-stage build optimizado
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copiar archivos de proyecto
+COPY ["UserService/UserService.csproj", "UserService/"]
+COPY ["UserService.Tests/UserService.Tests.csproj", "UserService.Tests/"]
+RUN dotnet restore "UserService/UserService.csproj"
+
+# Copiar código fuente
+COPY . .
+WORKDIR "/src/UserService"
+
+# Ejecutar tests
+RUN dotnet test "../UserService.Tests/UserService.Tests.csproj" --no-restore
+
+# Build y publish
+RUN dotnet build "UserService.csproj" -c Release -o /app/build
+RUN dotnet publish "UserService.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+WORKDIR /app
+
+# Instalar herramientas de diagnóstico
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /app/publish .
+
+# Usuario no-root para seguridad
+RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+USER appuser
+
+EXPOSE 80
+ENTRYPOINT ["dotnet", "UserService.dll"]
+```
+
+### Configuración de Seguridad
+```yaml
+# Ejemplo de SecurityContext en Kubernetes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+spec:
+  template:
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+      containers:
+      - name: user-service
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: varlog
+          mountPath: /var/log
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: varlog
+        emptyDir: {}
+```
+
 ## Checklist de Cumplimiento
 
 ### Para Nuevos Microservicios

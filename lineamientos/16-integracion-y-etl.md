@@ -1,6 +1,6 @@
 # Integración y ETL
 
-## Visión General
+## Propósito
 
 La integración de sistemas y los procesos ETL (Extract, Transform, Load) son fundamentales para conectar aplicaciones, sincronizar datos y mantener la consistencia en arquitecturas distribuidas. En nuestro contexto, nos enfocamos en patrones modernos basados en APIs, eventos y herramientas cloud-native.
 

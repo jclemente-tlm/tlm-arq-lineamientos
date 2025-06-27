@@ -1,6 +1,6 @@
 # Modernización y Stack Heredado
 
-## Visión General
+## Propósito
 
 La modernización de sistemas heredados es un proceso estratégico para actualizar tecnologías obsoletas a plataformas modernas, mejorando la mantenibilidad, escalabilidad y seguridad. En nuestro contexto, nos enfocamos en migrar desde Oracle 19c, .NET Framework y tecnologías legacy hacia .NET 8+, PostgreSQL y arquitecturas modernas.
 

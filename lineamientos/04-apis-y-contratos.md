@@ -1,6 +1,6 @@
-# APIs
+# APIs y Contratos
 
-## Visión General
+## Propósito
 
 Las APIs son la columna vertebral de la arquitectura moderna, facilitando la comunicación entre servicios, aplicaciones frontend y sistemas externos. Este lineamiento define las pautas para diseñar, desarrollar e implementar APIs RESTful robustas, escalables y seguras, alineadas con nuestro stack tecnológico (.NET 8, AWS, microservicios).
 

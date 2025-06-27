@@ -1,6 +1,6 @@
 # Observabilidad y Monitorización
 
-## Visión General
+## Propósito
 
 La observabilidad es la capacidad de entender el estado interno de un sistema basándose en sus salidas externas. En arquitecturas modernas, especialmente microservicios, la observabilidad es crítica para detectar problemas, optimizar rendimiento y mantener la confiabilidad del sistema.
 
